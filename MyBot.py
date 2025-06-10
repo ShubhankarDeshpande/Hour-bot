@@ -5,6 +5,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import requests
+import webserver
 
 load_dotenv()
 intents = discord.Intents.default()
@@ -117,5 +118,5 @@ async def hours(interaction: discord.Interaction, student_id: int):
         await interaction.response.send_message(f"Error fetching data: {e}")
 
 
-
+webserver.keep_alive()
 bot.run(os.getenv("DISCORD_TOKEN")) #runs the bot with the token from the .env file
