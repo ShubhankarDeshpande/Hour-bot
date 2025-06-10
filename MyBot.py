@@ -97,7 +97,7 @@ async def hours(interaction: discord.Interaction, student_id: int):
                 hours = tds[1].get_text(strip=True)
                 embed = discord.Embed(
                     title="Outreach Hours",
-                    color=discord.Color.dark_orange()
+                    color=discord.Color.dark_green()
                 )
                 embed.add_field(name="Student ID", value=str(id_num), inline=True)
                 embed.add_field(name="Hours", value=hours, inline=False)
