@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 import requests
 
 load_dotenv()
-require('dotenv') .config() 
 intents = discord.Intents.default()
 intents.message_content = True 
 
