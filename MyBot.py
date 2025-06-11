@@ -26,7 +26,7 @@ async def on_message(msg):
 
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
-async def hours(interaction: discord.Interaction, student_id: int, ctx):
+async def hours(interaction: discord.Interaction, student_id: int, msg: discord.Message):
     url = "http://hours.westwoodrobots.org/hours"
     try:
         response = requests.get(url, timeout=5)
@@ -53,7 +53,7 @@ async def hours(interaction: discord.Interaction, student_id: int, ctx):
                 )
                 embed.add_field(name="Student ID", value=str(id_num), inline=True)
                 embed.add_field(name="Practice Hours", value=hours, inline=False)
-                embed.set_thumbnail(url=ctx.author.display_avatar.url)
+                embed.set_thumbnail(url=msg.author.display_avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 idfound = True
                 break
