@@ -26,7 +26,7 @@ async def on_message(msg):
 
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
-async def hours(interaction: discord.Interaction, student_id: int, msg: discord.Message):
+async def hours(interaction: discord.Interaction, student_id: int):
     url = "http://hours.westwoodrobots.org/hours"
     try:
         response = requests.get(url, timeout=5)
@@ -48,25 +48,27 @@ async def hours(interaction: discord.Interaction, student_id: int, msg: discord.
             if id_num == student_id:
                 hours = tds[1].get_text(strip=True)
                 embed = discord.Embed(
-                    title="Student Practice Hours",
+                    title="Practice Hours",
                     color=discord.Color.dark_orange()
                 )
                 embed.add_field(name="Student ID", value=str(id_num), inline=True)
                 embed.add_field(name="Practice Hours", value=hours, inline=False)
-                embed.set_thumbnail(url=msg.author.display_avatar.url)
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                embed.set_thumbnail(url=str(interaction.user.display_avatar.url))
                 idfound = True
-                break
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+
+                return
         if not idfound:
-            embed2 = discord.Embed(
+            embed4 = discord.Embed(
                 title="Student Not Found",
                 description=f"Student ID {student_id} not found.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed2, ephemeral=True)
+            await interaction.response.edit_message(embed=embed4, ephemeral=True)
 
     except Exception as e: 
-        await interaction.response.send_message(f"Error fetching data: {e}")
+        if not interaction.response.is_done():
+            await interaction.response.edit_message(f"Error fetching data: {e}")
 
 
 
@@ -75,7 +77,7 @@ async def hours(interaction: discord.Interaction, student_id: int, msg: discord.
 
 @bot.tree.command(name="outreach-hours", description = "Check Outreach hours")
 @app_commands.describe(student_id="Your student ID")
-async def hours(interaction: discord.Interaction, student_id: int):
+async def hours2(interaction2: discord.Interaction, student_id: int):
     url = "http://hours.westwoodrobots.org/volunteer-hours"
     try:
         response = requests.get(url, timeout=5)
@@ -97,26 +99,28 @@ async def hours(interaction: discord.Interaction, student_id: int):
                 continue
             if id_num == student_id:
                 hours = tds[1].get_text(strip=True)
-                embed = discord.Embed(
+                embed2 = discord.Embed(
                     title="Outreach Hours",
                     color=discord.Color.dark_green()
                 )
-                embed.add_field(name="Student ID", value=str(id_num), inline=True)
-                embed.add_field(name="Hours", value=hours, inline=False)
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                embed2.add_field(name="Student ID", value=str(id_num), inline=True)
+                embed2.add_field(name="Hours", value=hours, inline=False)
+                embed2.set_thumbnail(url=str(interaction2.user.display_avatar.url))
                 idfound = True
-                break
+                await interaction2.response.send_message(embed=embed2, ephemeral=True)
+                return
         
         if not idfound:
-            embed2 = discord.Embed(
+            embed3 = discord.Embed(
                 title="Student Not Found",
                 description=f"Student ID {student_id} not found.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed2, ephemeral=True)
+            await interaction2.response.edit_message(embed=embed3, ephemeral=True)
 
     except Exception as e: 
-        await interaction.response.send_message(f"Error fetching data: {e}")
+        if not interaction2.response.is_done():
+            await interaction2.response.edit_message(f"Error fetching data: {e}")
 
 
 webserver.keep_alive()
