@@ -27,7 +27,7 @@ async def on_message(msg):
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours(interaction: discord.Interaction, student_id: int):
-    url = "http://hours.westwoodrobots.org/hours"
+    url = "https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/practice/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -78,49 +78,32 @@ async def hours(interaction: discord.Interaction, student_id: int):
 @bot.tree.command(name="outreach-hours", description = "Check Outreach hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours2(interaction2: discord.Interaction, student_id: int):
-    url = "http://hours.westwoodrobots.org/volunteer-hours"
+    url = "https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/outreach/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         soup = BeautifulSoup(response.content, 'html.parser')
+        if response.status_code == 200 and "minutes" in data:
+            hours_val = round(data["minutes"] / 60, 2)  
+            embed = discord.Embed(
+                title="Outreach Hours",
+                color=discord.Color.dark_orange()
+            )
+            embed.add_field(name="Student ID", value=str(student_id), inline=True)
+            embed.add_field(name="Outreach Hours", value=f"{hours_val} hours", inline=False)
+            embed.set_thumbnail(url=str(interaction2.user.display_avatar.url))
+            await interaction2.response.send_message(embed=embed, ephemeral=True)
 
-        trs = soup.find_all("tr")
-        idfound = False
-        for tr in trs:
-            tds = tr.find_all("td")#gets all the table td's
-            if len(tds) < 4:
-                continue #skips rows with less than 4 tds
-            if(len(tds) % 4 == 0):
-                atag = tds[0].find("a", class_="student-link")
-                id_text = atag.get_text(strip=True)
-
-            try: 
-                id_num = int(id_text) #gets only the digits from the id_text
-            except ValueError:
-                continue
-            if id_num == student_id:
-                hours = tds[1].get_text(strip=True)
-                embed2 = discord.Embed(
-                    title="Outreach Hours",
-                    color=discord.Color.dark_green()
-                )
-                embed2.add_field(name="Student ID", value=str(id_num), inline=True)
-                embed2.add_field(name="Hours", value=hours, inline=False)
-                embed2.set_thumbnail(url=str(interaction2.user.display_avatar.url))
-                idfound = True
-                await interaction2.response.send_message(embed=embed2, ephemeral=True)
-                return
-        
-        if not idfound:
-            embed3 = discord.Embed(
+        else:
+            embed4 = discord.Embed(
                 title="Student Not Found",
                 description=f"Student ID {student_id} not found.",
                 color=discord.Color.red()
             )
-            await interaction2.response.edit_message(embed=embed3, ephemeral=True)
+            await interaction2.response.send_message(embed=embed4, ephemeral=True)
 
     except Exception as e: 
         if not interaction2.response.is_done():
-            await interaction2.response.edit_message(f"Error fetching data: {e}")
+            await interaction2.response.edit_message(f"Error fetching data: {e}", ephemeral=True)
 
 
 webserver.keep_alive()
