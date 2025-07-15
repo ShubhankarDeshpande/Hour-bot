@@ -65,7 +65,7 @@ async def hours(interaction: discord.Interaction, student_id: int):
             embed4 = discord.Embed(
                 title="No valid practice hour data found",
                 description=f"Student {student_id} has 0 practice hours.",
-                color=discord.Color.red()
+                color=discord.Color.dark_orange()
             )
             await interaction.response.send_message(embed=embed4, ephemeral=True)
 
@@ -103,9 +103,9 @@ async def hours2(interaction2: discord.Interaction, student_id: int):
 
         else:
             embed4 = discord.Embed(
-                title="Student Not Found",
-                description=f"Student ID {student_id} not found.",
-                color=discord.Color.red()
+                title="No valid outreach hour data found",
+                description=f"Student {student_id} has 0 outreach hours.",
+                color=discord.Color.dark_green()
             )
             await interaction2.response.send_message(embed=embed4, ephemeral=True)
 
