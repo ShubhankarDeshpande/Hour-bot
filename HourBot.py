@@ -18,25 +18,14 @@ async def on_ready(): #runs when bot is online
     await bot.tree.sync()
     print(f"{bot.user} online")
 
-class OutreachSessionDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="No sessions yet, check in later!", value="session1"),
 
-        ]
-        super().__init__(placeholder="Select an outreach session", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f"Check back when volunteer sessions start!", ephemeral=True)
-class OutreachSessionView(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.add_item(OutreachSessionDropdown())
 
-""" @bot.event
-async def on_message(msg):
-    if msg.author.id != bot.user.id:  # Ignore messages from the bot 
-        await msg.channel.send(f"nice, {msg.author.mention}") """
+
+
+
+
+
 
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
@@ -57,17 +46,17 @@ async def hours(interaction: discord.Interaction, student_id: int):
                 color=discord.Color.dark_orange()
             )
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
-            embed.add_field(name="practice Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
+            embed.add_field(name="Practice Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
             embed.set_thumbnail(url=interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
         else:
-            embed4 = discord.Embed(
+            errorembed = discord.Embed(
                 title="No valid practice hour data found",
                 description=f"Student {student_id} has 0 practice hours.",
                 color=discord.Color.dark_orange()
             )
-            await interaction.response.send_message(embed=embed4, ephemeral=True)
+            await interaction.response.send_message(embed=errorembed, ephemeral=True)
 
     except Exception as e: 
         if not interaction.response.is_done():
@@ -76,6 +65,60 @@ async def hours(interaction: discord.Interaction, student_id: int):
 
  
 #OUTREACH HOURS
+
+
+
+class OutreachSessionDropdown(discord.ui.Select):
+    def __init__(self,student_id):
+        self.student_id = student_id
+        options = [
+            discord.SelectOption(label="Robocamp week 1", value = "1"),
+            discord.SelectOption(label="Robocamp week 2", value = "2"),
+            discord.SelectOption(label="Robocamp week 3", value = "3"),
+        ]
+        super().__init__(placeholder="Select an outreach session", options=options)
+
+    async def callback(self, interaction3: discord.Interaction):
+        selected = self.values[0]
+        week_str = f"Robocamp W{selected}"
+        if selected in ["1", "2", "3"]:
+            totalminutes = 0
+            i = 0
+            Sessionembed = discord.Embed(
+                title="Robocamp Week " + str(selected),
+                color=discord.Color.dark_green()
+            )
+
+            for i in range(1, 6):
+                url = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{week_str}D{i}/aggregate/{self.student_id}"
+                try:
+                    response = requests.get(url, timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "minutes" in data:
+                            totalminutes += data["minutes"]
+                except Exception as e:
+                    print(f"Error fetching data for Robocamp Week {week_str} Day {i}: {e}")
+            
+            Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
+            Sessionembed.add_field(name="Robocamp Week " + str(week_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
+            await interaction3.response.edit_message(embed=Sessionembed, ephemeral=True)
+
+class OutreachSessionView(discord.ui.View):
+    def __init__(self, student_id):
+        super().__init__()
+        self.add_item(OutreachSessionDropdown(student_id))
+
+
+
+
+
+
+
+
+
+
 
 
 @bot.tree.command(name="outreach-hours", description = "Check Outreach hours")
@@ -89,6 +132,7 @@ async def hours2(interaction2: discord.Interaction, student_id: int):
         except Exception:
             await interaction2.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
             return 
+        
         if response.status_code == 200 and "minutes" in data:
             hours_val = data["minutes"] // 60 
             minutes_val = data["minutes"] % 60
@@ -99,15 +143,15 @@ async def hours2(interaction2: discord.Interaction, student_id: int):
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
             embed.add_field(name="Outreach Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
             embed.set_thumbnail(url=interaction2.user.display_avatar.url)
-            await interaction2.response.send_message(embed=embed, view=OutreachSessionView(), ephemeral=True)
+            await interaction2.response.send_message(embed=embed, view=OutreachSessionView(student_id), ephemeral=True)
 
         else:
-            embed4 = discord.Embed(
+            errorembed2 = discord.Embed(
                 title="No valid outreach hour data found",
                 description=f"Student {student_id} has 0 outreach hours.",
                 color=discord.Color.dark_green()
             )
-            await interaction2.response.send_message(embed=embed4, ephemeral=True)
+            await interaction2.response.send_message(embed=errorembed2, ephemeral=True)
 
     except Exception as e: 
         if not interaction2.response.is_done():
