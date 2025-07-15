@@ -18,6 +18,20 @@ async def on_ready(): #runs when bot is online
     await bot.tree.sync()
     print(f"{bot.user} online")
 
+class OutreachSessionDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="No sessions yet, check in later!", value="session1"),
+
+        ]
+        super().__init__(placeholder="Select an outreach session", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(f"Check back when volunteer sessions start!", ephemeral=True)
+class OutreachSessionView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(OutreachSessionDropdown())
 
 """ @bot.event
 async def on_message(msg):
@@ -27,71 +41,65 @@ async def on_message(msg):
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours(interaction: discord.Interaction, student_id: int):
-    url = "https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/practice/{student_id}"
+    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/practice/{student_id}"
     try:
         response = requests.get(url, timeout=5)
-        soup = BeautifulSoup(response.content, 'html.parser')
+        try:
+            data = response.json()
+        except Exception:
+            await interaction.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+            return 
+        if response.status_code == 200 and "minutes" in data:
+            hours_val = data["minutes"] // 60 
+            minutes_val = data["minutes"] % 60
+            embed = discord.Embed(
+                title="Practice Hours",
+                color=discord.Color.dark_orange()
+            )
+            embed.add_field(name="Student ID", value=str(student_id), inline=True)
+            embed.add_field(name="practice Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
+            embed.set_thumbnail(url=interaction.user.display_avatar.url)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        trs = soup.find_all("tr")
-        idfound = False
-        for tr in trs:
-            tds = tr.find_all("td")#gets all the table td's
-            if len(tds) < 3:
-                continue #skips rows with no
-            if(len(tds) % 3 == 0):
-                id_text = tds[0].get_text(strip=True)
-
-            try: 
-                id_num = int(''.join(filter(str.isdigit, id_text))) #gets only the digits from the id_text
-            except ValueError:
-                continue
-            if id_num == student_id:
-                hours = tds[1].get_text(strip=True)
-                embed = discord.Embed(
-                    title="Practice Hours",
-                    color=discord.Color.dark_orange()
-                )
-                embed.add_field(name="Student ID", value=str(id_num), inline=True)
-                embed.add_field(name="Practice Hours", value=hours, inline=False)
-                embed.set_thumbnail(url=str(interaction.user.display_avatar.url))
-                idfound = True
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-
-                return
-        if not idfound:
+        else:
             embed4 = discord.Embed(
-                title="Student Not Found",
-                description=f"Student ID {student_id} not found.",
+                title="No valid practice hour data found",
+                description=f"Student {student_id} has 0 practice hours.",
                 color=discord.Color.red()
             )
-            await interaction.response.edit_message(embed=embed4, ephemeral=True)
+            await interaction.response.send_message(embed=embed4, ephemeral=True)
 
     except Exception as e: 
         if not interaction.response.is_done():
-            await interaction.response.edit_message(f"Error fetching data: {e}")
+            await interaction.response.send_message(f"Error fetching data: {e}", ephemeral=True)
 
 
-
+ 
 #OUTREACH HOURS
 
 
 @bot.tree.command(name="outreach-hours", description = "Check Outreach hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours2(interaction2: discord.Interaction, student_id: int):
-    url = "https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/outreach/{student_id}"
+    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/outreach/{student_id}"
     try:
         response = requests.get(url, timeout=5)
-        soup = BeautifulSoup(response.content, 'html.parser')
+        try:
+            data = response.json()
+        except Exception:
+            await interaction2.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+            return 
         if response.status_code == 200 and "minutes" in data:
-            hours_val = round(data["minutes"] / 60, 2)  
+            hours_val = data["minutes"] // 60 
+            minutes_val = data["minutes"] % 60
             embed = discord.Embed(
                 title="Outreach Hours",
-                color=discord.Color.dark_orange()
+                color=discord.Color.dark_green()
             )
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
-            embed.add_field(name="Outreach Hours", value=f"{hours_val} hours", inline=False)
-            embed.set_thumbnail(url=str(interaction2.user.display_avatar.url))
-            await interaction2.response.send_message(embed=embed, ephemeral=True)
+            embed.add_field(name="Outreach Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
+            embed.set_thumbnail(url=interaction2.user.display_avatar.url)
+            await interaction2.response.send_message(embed=embed, view=OutreachSessionView(), ephemeral=True)
 
         else:
             embed4 = discord.Embed(
@@ -103,7 +111,7 @@ async def hours2(interaction2: discord.Interaction, student_id: int):
 
     except Exception as e: 
         if not interaction2.response.is_done():
-            await interaction2.response.edit_message(f"Error fetching data: {e}", ephemeral=True)
+            await interaction2.response.send_message(f"Error fetching data: {e}", ephemeral=True)
 
 
 webserver.keep_alive()
