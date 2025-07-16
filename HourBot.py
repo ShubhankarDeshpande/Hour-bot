@@ -4,6 +4,10 @@ from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from datetime import timedelta
+
 import requests
 import webserver
 
@@ -90,23 +94,42 @@ class RobocampDayDropdown(discord.ui.Select):
                 color=discord.Color.dark_green()
             )
             url = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{self.weeknumber}D{selected}/aggregate/{self.student_id}"
+            timeurl = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{self.weeknumber}D{selected}/individual/{self.student_id}"
             print(self.weeknumber + " " + selected + " " + str(self.student_id))
             try:
                 response = requests.get(url, timeout=5)
+                timeresponse = requests.get(timeurl, timeout=5)
                 try:
                     data = response.json()
+                    timedata = timeresponse.json()
                 except Exception:
                     await interaction4.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
                     return
-
+                startfield = "Start Time: No logs available"
                 if "minutes" in data and response.status_code == 200:
                     totaldaymins = data["minutes"]
+                    logs = timedata.get("logs", [])
+                    if len(logs) > 0:
+                        endtime = logs[0]["timestamp"]
+
+                        dt_utc = datetime.fromisoformat(endtime.replace("Z", "+00:00"))
+                        start_utc = dt_utc - timedelta(minutes=totaldaymins) - timedelta(hours=5)  
+                        dt_local = dt_utc-timedelta(hours=5) 
+
+                        finaltime = dt_local.strftime(" %I:%M:%S %p")
+                        starttime = start_utc.strftime(" %I:%M:%S %p")
+
+                        startfield = f"Start Time: {starttime} \nEnd Time: {finaltime}"
+
+                        
+
                     print(f"totalminutes: {totaldaymins}")
             except Exception as e:
                 print(f"Error fetching data for Robocamp Week {self.weeknumber} Day {selected}: {e}")
 
             Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
             Sessionembed.add_field(name="Robocamp Week " + str(self.weeknumber) + " Day " + selected + " Hours", value= f"{totaldaymins//60} hours and {totaldaymins%60} minutes", inline=False)
+            Sessionembed.add_field(name="Start and End Time ", value= startfield, inline=False)
             Sessionembed.set_thumbnail(url=interaction4.user.display_avatar.url)
             print(totaldaymins)
             await interaction4.response.send_message(embed=Sessionembed, view = RobocampDayView(self.student_id, self.weeknumber), ephemeral=True)
