@@ -67,6 +67,47 @@ async def hours(interaction: discord.Interaction, student_id: int):
             await interaction.response.send_message(f"Error fetching data: {e}", ephemeral=True)
 
 
+
+
+
+#COMPETITION HOURS
+@bot.tree.command(name="competition-hours", description = "Check competition hours")
+@app_commands.describe(student_id="Your student ID")
+async def hours(interaction: discord.Interaction, student_id: int):
+    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/competition/{student_id}"
+    try:
+        response = requests.get(url, timeout=5)
+        try:
+            data = response.json()
+        except Exception:
+            await interaction.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+            return 
+        if response.status_code == 200 and "minutes" in data:
+            hours_val = data["minutes"] // 60 
+            minutes_val = data["minutes"] % 60
+            embed = discord.Embed(
+                title="Competition Hours",
+                color=discord.Color.dark_red()
+            )
+            embed.add_field(name="Student ID", value=str(student_id), inline=True)
+            embed.add_field(name="Competition Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
+            embed.set_thumbnail(url=interaction.user.display_avatar.url)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        else:
+            errorembed = discord.Embed(
+                title="No valid Competition hour data found",
+                description=f"Student {student_id} has 0 Competition hours.",
+                color=discord.Color.dark_red()
+            )
+            await interaction.response.send_message(embed=errorembed, ephemeral=True)
+
+    except Exception as e: 
+        if not interaction.response.is_done():
+            await interaction.response.send_message(f"Error fetching data: {e}", ephemeral=True)
+
+
+
  
 #OUTREACH HOURS SECTION
 
