@@ -34,7 +34,7 @@ async def on_ready(): #runs when bot is online
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours(interaction: discord.Interaction, student_id: int):
-    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/practice/{student_id}"
+    url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         try:
@@ -74,7 +74,7 @@ async def hours(interaction: discord.Interaction, student_id: int):
 @bot.tree.command(name="competition-hours", description = "Check competition hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours(interaction: discord.Interaction, student_id: int):
-    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/competition/{student_id}"
+    url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/competition/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         try:
@@ -134,9 +134,9 @@ class RobocampDayDropdown(discord.ui.Select):
                 title="Robocamp Week " + self.weeknumber + " Day " + selected + " Hours",
                 color=discord.Color.dark_green()
             )
-            url = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{self.weeknumber}D{selected}/aggregate/{self.student_id}"
-            timeurl = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{self.weeknumber}D{selected}/individual/{self.student_id}"
-            print(self.weeknumber + " " + selected + " " + str(self.student_id))
+            url = f"https://api-db-hours.westwoodrobots.org/outreach/Robocamp%20W{self.weeknumber}D{selected}/aggregate/{self.student_id}"
+            timeurl = f"https://api-db-hours.westwoodrobots.org/outreach/Robocamp%20W{self.weeknumber}D{selected}/individual/{self.student_id}"
+#            print(self.weeknumber + " " + selected + " " + str(self.student_id))
             try:
                 response = requests.get(url, timeout=5)
                 timeresponse = requests.get(timeurl, timeout=5)
@@ -164,7 +164,7 @@ class RobocampDayDropdown(discord.ui.Select):
 
                         
 
-                    print(f"totalminutes: {totaldaymins}")
+                    #print(f"totalminutes: {totaldaymins}")
             except Exception as e:
                 print(f"Error fetching data for Robocamp Week {self.weeknumber} Day {selected}: {e}")
 
@@ -172,7 +172,7 @@ class RobocampDayDropdown(discord.ui.Select):
             Sessionembed.add_field(name="Robocamp Week " + str(self.weeknumber) + " Day " + selected + " Hours", value= f"{totaldaymins//60} hours and {totaldaymins%60} minutes", inline=False)
             Sessionembed.add_field(name="Start and End Time ", value= startfield, inline=False)
             Sessionembed.set_thumbnail(url=interaction4.user.display_avatar.url)
-            print(totaldaymins)
+            #print(totaldaymins)
             await interaction4.response.send_message(embed=Sessionembed, view = RobocampDayView(self.student_id, self.weeknumber), ephemeral=True)
 
 class RobocampDayView(discord.ui.View):
@@ -208,7 +208,7 @@ class OutreachSessionDropdown(discord.ui.Select):
             )
 
             for i in range(1, 6):
-                url = f"https://hrs-db-api-wwrobo.ftcscoring.app/outreach/Robocamp%20W{week_str}D{i}/aggregate/{self.student_id}"
+                url = f"https://api-db-hours.westwoodrobots.org/outreach/Robocamp%20W{week_str}D{i}/aggregate/{self.student_id}"
                 try:
                     response = requests.get(url, timeout=5)
                     try:
@@ -219,14 +219,14 @@ class OutreachSessionDropdown(discord.ui.Select):
                     
                     if "minutes" in data and response.status_code == 200:
                         totalminutes += data["minutes"]
-                        print(f"totalminutes: {totalminutes}")
+                        #print(f"totalminutes: {totalminutes}")
                 except Exception as e:
                     print(f"Error fetching data for Robocamp Week {week_str} Day {i}: {e}")
             
             Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
             Sessionembed.add_field(name="Robocamp Week " + str(week_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
             Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
-            print(totalminutes)
+            #print(totalminutes)
             await interaction3.response.send_message(embed=Sessionembed, view = RobocampDayView(self.student_id, week_str), ephemeral=True)
 
 class OutreachSessionView(discord.ui.View):
@@ -248,7 +248,7 @@ class OutreachSessionView(discord.ui.View):
 @bot.tree.command(name="outreach-hours", description = "Check Outreach hours")
 @app_commands.describe(student_id="Your student ID")
 async def hours2(interaction2: discord.Interaction, student_id: int):
-    url = f"https://hrs-db-api-wwrobo.ftcscoring.app/aggregate/member/outreach/{student_id}"
+    url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/outreach/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         try:
