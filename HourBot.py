@@ -26,6 +26,57 @@ async def on_ready(): #runs when bot is online
 
 
 
+class PracticeSessionDropdown(discord.ui.Select):
+    def __init__(self,student_id):
+        self.student_id = student_id
+        options = [
+            discord.SelectOption(label="September", value = "1"),
+            discord.SelectOption(label="October", value = "2"),
+            discord.SelectOption(label="November", value = "3"),
+            discord.SelectOption(label="December", value = "4"),
+            discord.SelectOption(label="January", value = "5"),
+            discord.SelectOption(label="February", value = "6"),
+            discord.SelectOption(label="March", value = "7"),
+            discord.SelectOption(label="April", value = "8"),
+            discord.SelectOption(label="May", value = "9"),
+        ]
+        super().__init__(placeholder="Select a month", options=options)
+
+    async def callback(self, interaction3: discord.Interaction):
+        selected = self.values[0]
+        month_str = f"{selected}"
+        url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{self.student_id}?month={selected}"
+        try:
+            response = requests.get(url, timeout=5)
+            try:
+                data = response.json()
+            except Exception:
+                await interaction3.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+                return
+        except Exception as e:
+            print(f"Error fetching data for Practice Month {month_str}: {e}")
+        
+        if response.status_code == 200 and "minutes" in data:
+            totalminutes = data["minutes"]
+            Sessionembed = discord.Embed(
+                title ="Practice Hours for Month " + month_str,
+                color=discord.Color.dark_orange()
+            )
+            Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
+            Sessionembed.add_field(name="Practice Month " + str(month_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
+            #print(totalminutes)
+            await interaction3.response.send_message(embed=Sessionembed, view = PracticeSessionView(self.student_id), ephemeral=True)
+        else:
+            await interaction3.response.send_message(
+                f"No data found for month {month_str}.",
+                ephemeral=True
+            )
+
+class PracticeSessionView(discord.ui.View):
+    def __init__(self, student_id):
+        super().__init__()
+        self.add_item(PracticeSessionDropdown(student_id))
 
 
 
@@ -33,7 +84,9 @@ async def on_ready(): #runs when bot is online
 #PRACTICE HOURS
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
-async def hours(interaction: discord.Interaction, student_id: int):
+async def practice_hours(interaction: discord.Interaction, student_id: int):
+    await interaction.response.defer(ephemeral=True)
+
     url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{student_id}"
     try:
         response = requests.get(url, timeout=5)
@@ -52,7 +105,7 @@ async def hours(interaction: discord.Interaction, student_id: int):
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
             embed.add_field(name="Practice Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
             embed.set_thumbnail(url=interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.edit_original_response(embed=embed, view=PracticeSessionView(student_id))
 
         else:
             errorembed = discord.Embed(
@@ -65,74 +118,6 @@ async def hours(interaction: discord.Interaction, student_id: int):
     except Exception as e: 
         if not interaction.response.is_done():
             await interaction.response.send_message(f"Error fetching data: {e}", ephemeral=True)
-
-class PracticeHoursDropdown(discord.ui.Select):
-    def __init__(self,student_id, weeknumber):
-        self.student_id = student_id
-        self.weeknumber = weeknumber
-        options = [
-            discord.SelectOption(label="Practice " + self.weeknumber + " day 1", value = "1"),
-            discord.SelectOption(label="Robocamp week " + self.weeknumber + " day 2", value = "2"),
-            discord.SelectOption(label="Robocamp week " + self.weeknumber + " day 3", value = "3"),
-            discord.SelectOption(label="Robocamp week " + self.weeknumber + " day 4", value = "4"),
-            discord.SelectOption(label="Robocamp week " + self.weeknumber + " day 5", value = "5"),
-        ]
-        super().__init__(placeholder="Select a Robocamp day", options=options)
-
-    async def callback(self, interaction4: discord.Interaction):
-        selected = self.values[0]
-        if selected in ["1", "2", "3", "4", "5"]:
-            totaldaymins = 0
-            Sessionembed = discord.Embed(
-                title="Robocamp Week " + self.weeknumber + " Day " + selected + " Hours",
-                color=discord.Color.dark_green()
-            )
-            url = f"https://api-db-hours.westwoodrobots.org/outreach/Robocamp%20W{self.weeknumber}D{selected}/aggregate/{self.student_id}"
-            timeurl = f"https://api-db-hours.westwoodrobots.org/outreach/Robocamp%20W{self.weeknumber}D{selected}/individual/{self.student_id}"
-#            print(self.weeknumber + " " + selected + " " + str(self.student_id))
-            try:
-                response = requests.get(url, timeout=5)
-                timeresponse = requests.get(timeurl, timeout=5)
-                try:
-                    data = response.json()
-                    timedata = timeresponse.json()
-                except Exception:
-                    await interaction4.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
-                    return
-                startfield = "Start Time: No logs available"
-                if "minutes" in data and response.status_code == 200:
-                    totaldaymins = data["minutes"]
-                    logs = timedata.get("logs", [])
-                    if len(logs) > 0:
-                        endtime = logs[0]["timestamp"]
-
-                        dt_utc = datetime.fromisoformat(endtime.replace("Z", "+00:00"))
-                        start_utc = dt_utc - timedelta(minutes=totaldaymins) - timedelta(hours=5)  
-                        dt_local = dt_utc-timedelta(hours=5) 
-
-                        finaltime = dt_local.strftime(" %I:%M:%S %p")
-                        starttime = start_utc.strftime(" %I:%M:%S %p")
-
-                        startfield = f"Start Time: {starttime} \nEnd Time: {finaltime}"
-
-                        
-
-                    #print(f"totalminutes: {totaldaymins}")
-            except Exception as e:
-                print(f"Error fetching data for Robocamp Week {self.weeknumber} Day {selected}: {e}")
-
-            Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
-            Sessionembed.add_field(name="Robocamp Week " + str(self.weeknumber) + " Day " + selected + " Hours", value= f"{totaldaymins//60} hours and {totaldaymins%60} minutes", inline=False)
-            Sessionembed.add_field(name="Start and End Time ", value= startfield, inline=False)
-            Sessionembed.set_thumbnail(url=interaction4.user.display_avatar.url)
-            #print(totaldaymins)
-            await interaction4.response.send_message(embed=Sessionembed, view = RobocampDayView(self.student_id, self.weeknumber), ephemeral=True)
-
-class RobocampDayView(discord.ui.View):
-    def __init__(self, student_id, week_number):
-        super().__init__()
-        self.add_item(RobocampDayDropdown(student_id, week_number))
-
 
 
 
@@ -253,7 +238,7 @@ class RobocampDayView(discord.ui.View):
 
 
 
-#OUTREACH SESSION DROPDOWN
+#ROBOCAMP WEEK DROPDOWN AND OUTREACH SESSION DROPDOWN
 class OutreachSessionDropdown(discord.ui.Select):
     def __init__(self,student_id):
         self.student_id = student_id
