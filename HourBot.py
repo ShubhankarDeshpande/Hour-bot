@@ -70,11 +70,11 @@ class PracticeSessionDropdown(discord.ui.Select):
         if response.status_code == 200 and "minutes" in data:
             totalminutes = data["minutes"]
             Sessionembed = discord.Embed(
-                title ="Practice Hours for " + month_names.get(month_str),
+                title ="Practice Hours for " + month_names[month_str],
                 color=discord.Color.dark_orange()
             )
             Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
-            Sessionembed.add_field(name=month_names.get(month_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.add_field(name=month_names[month_str] + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
             Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
             #print(totalminutes)
             await interaction3.response.send_message(embed=Sessionembed, view = PracticeSessionView(self.student_id), ephemeral=True)
