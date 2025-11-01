@@ -84,7 +84,7 @@ class PracticeSessionView(discord.ui.View):
 #PRACTICE HOURS
 @bot.tree.command(name="practice-hours", description = "Check practice hours")
 @app_commands.describe(student_id="Your student ID")
-async def hours(interaction: discord.Interaction, student_id: int):
+async def practice_hours(interaction: discord.Interaction, student_id: int):
     url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{student_id}"
     try:
         response = requests.get(url, timeout=5)
@@ -103,7 +103,7 @@ async def hours(interaction: discord.Interaction, student_id: int):
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
             embed.add_field(name="Practice Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
             embed.set_thumbnail(url=interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, view=PracticeSessionView(student_id), ephemeral=True)
 
         else:
             errorembed = discord.Embed(
