@@ -26,6 +26,57 @@ async def on_ready(): #runs when bot is online
 
 
 
+class PracticeSessionDropdown(discord.ui.Select):
+    def __init__(self,student_id):
+        self.student_id = student_id
+        options = [
+            discord.SelectOption(label="September", value = "1"),
+            discord.SelectOption(label="October", value = "2"),
+            discord.SelectOption(label="November", value = "3"),
+            discord.SelectOption(label="December", value = "4"),
+            discord.SelectOption(label="January", value = "5"),
+            discord.SelectOption(label="February", value = "6"),
+            discord.SelectOption(label="March", value = "7"),
+            discord.SelectOption(label="April", value = "8"),
+            discord.SelectOption(label="May", value = "9"),
+        ]
+        super().__init__(placeholder="Select a month", options=options)
+
+    async def callback(self, interaction3: discord.Interaction):
+        selected = self.values[0]
+        month_str = f"{selected}"
+        url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{self.student_id}?month={selected}"
+        try:
+            response = requests.get(url, timeout=5)
+            try:
+                data = response.json()
+            except Exception:
+                await interaction3.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+                return
+        except Exception as e:
+            print(f"Error fetching data for Practice Month {month_str}: {e}")
+        
+        if response.status_code == 200 and "minutes" in data:
+            totalminutes = data["minutes"]
+            Sessionembed = discord.Embed(
+                title ="Practice Hours for Month " + month_str,
+                color=discord.Color.dark_orange()
+            )
+            Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
+            Sessionembed.add_field(name="Practice Month " + str(month_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
+            #print(totalminutes)
+            await interaction3.response.send_message(embed=Sessionembed, view = PracticeSessionView(self.student_id), ephemeral=True)
+        else:
+            await interaction3.response.send_message(
+                f"No data found for month {month_str}.",
+                ephemeral=True
+            )
+
+class PracticeSessionView(discord.ui.View):
+    def __init__(self, student_id):
+        super().__init__()
+        self.add_item(PracticeSessionDropdown(student_id))
 
 
 
