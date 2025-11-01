@@ -45,6 +45,17 @@ class PracticeSessionDropdown(discord.ui.Select):
     async def callback(self, interaction3: discord.Interaction):
         selected = self.values[0]
         month_str = f"{selected}"
+        month_names = [
+            "September",
+            "October",
+            "November",
+            "December",
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+        ]
         url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/practice/{self.student_id}?month={selected}"
         try:
             response = requests.get(url, timeout=5)
@@ -59,11 +70,11 @@ class PracticeSessionDropdown(discord.ui.Select):
         if response.status_code == 200 and "minutes" in data:
             totalminutes = data["minutes"]
             Sessionembed = discord.Embed(
-                title ="Practice Hours for Month " + month_str,
+                title ="Practice Hours for " + month_names.get(month_str),
                 color=discord.Color.dark_orange()
             )
             Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
-            Sessionembed.add_field(name="Practice Month " + str(month_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.add_field(name=month_names.get(month_str) + " Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
             Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
             #print(totalminutes)
             await interaction3.response.send_message(embed=Sessionembed, view = PracticeSessionView(self.student_id), ephemeral=True)
