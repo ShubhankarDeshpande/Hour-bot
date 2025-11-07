@@ -251,17 +251,18 @@ class RobocampDayView(discord.ui.View):
 
 #ROBOCAMP WEEK DROPDOWN AND OUTREACH SESSION DROPDOWN
 class OutreachSessionDropdown(discord.ui.Select):
-    def __init__(self,student_id):
+    def __init__(self,student_id,sessions_data):
         self.student_id = student_id
         options = [
             discord.SelectOption(label="Robocamp week 1", value = "1"),
             discord.SelectOption(label="Robocamp week 2", value = "2"),
             discord.SelectOption(label="Robocamp week 3", value = "3"),
         ]
-        super().__init__(placeholder="Select an outreach session", options=options)
         realsessions = sessions_data[15:]
         for session in realsessions:
             options.append(discord.SelectOption(label=session, value=session))
+        super().__init__(placeholder="Select an outreach session", options=options)
+        
         
     async def callback(self, interaction3: discord.Interaction):
         selected = self.values[0]
@@ -361,7 +362,7 @@ async def hours2(interaction2: discord.Interaction, student_id: int):
             embed.add_field(name="Student ID", value=str(student_id), inline=True)
             embed.add_field(name="Total outreach Hours", value= f"{hours_val} hours and {minutes_val} minutes", inline=False)
             embed.set_thumbnail(url=interaction2.user.display_avatar.url)
-            await interaction2.response.send_message(embed=embed, view=OutreachSessionView(student_id), ephemeral=True)
+            await interaction2.response.send_message(embed=embed, view=OutreachSessionView(student_id, sessions_data), ephemeral=True)
 
         else:
             errorembed2 = discord.Embed(
