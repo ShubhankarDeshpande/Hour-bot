@@ -342,7 +342,7 @@ class OutreachSessionView(discord.ui.View):
 @app_commands.describe(student_id="Your student ID")
 async def hours2(interaction2: discord.Interaction, student_id: int):
     url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/outreach/{student_id}"
-    session_url = f"https://api-db-hours.westwoodrobots.org/outreach/sessions/{student_id}"
+    session_url = f"https://api-db-hours.westwoodrobots.org/outreach/sessions"
     try:
         response = requests.get(url, timeout=5)
         try:
