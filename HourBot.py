@@ -80,7 +80,7 @@ class PracticeSessionDropdown(discord.ui.Select):
             await interaction3.response.send_message(embed=Sessionembed, view = PracticeSessionView(self.student_id), ephemeral=True)
         else:
             await interaction3.response.send_message(
-                f"No data found for month {month_str}.",
+                f"No hours for month {month_str}.",
                 ephemeral=True
             )
 
@@ -259,7 +259,10 @@ class OutreachSessionDropdown(discord.ui.Select):
             discord.SelectOption(label="Robocamp week 3", value = "3"),
         ]
         super().__init__(placeholder="Select an outreach session", options=options)
-
+        realsessions = sessions_data[15:]
+        for session in realsessions:
+            options.append(discord.SelectOption(label=session, value=session))
+        
     async def callback(self, interaction3: discord.Interaction):
         selected = self.values[0]
         week_str = f"{selected}"
@@ -292,7 +295,32 @@ class OutreachSessionDropdown(discord.ui.Select):
             Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
             #print(totalminutes)
             await interaction3.response.send_message(embed=Sessionembed, view = RobocampDayView(self.student_id, week_str), ephemeral=True)
-
+        else:
+            totalminutes = 0
+            Sessionembed = discord.Embed(
+                title="Outreach Session: " + str(selected),
+                color=discord.Color.dark_green()
+            )
+            url = f"https://api-db-hours.westwoodrobots.org/outreach/{selected}/aggregate/{self.student_id}"
+            try:
+                response = requests.get(url, timeout=5)
+                try:
+                    data = response.json()
+                except Exception:
+                    await interaction3.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
+                    return 
+                
+                if "minutes" in data and response.status_code == 200:
+                    totalminutes += data["minutes"]
+                    #print(f"totalminutes: {totalminutes}")
+            except Exception as e:
+                print(f"Error fetching data for Outreach Session {selected}: {e}")
+        
+            Sessionembed.add_field(name="Student ID", value=str(self.student_id), inline=True)
+            Sessionembed.add_field(name="Outreach Session Hours", value= f"{totalminutes//60} hours and {totalminutes%60} minutes", inline=False)
+            Sessionembed.set_thumbnail(url=interaction3.user.display_avatar.url)
+            #print(totalminutes)
+            await interaction3.response.send_message(embed=Sessionembed, ephemeral=True)
 class OutreachSessionView(discord.ui.View):
     def __init__(self, student_id):
         super().__init__()
@@ -313,14 +341,16 @@ class OutreachSessionView(discord.ui.View):
 @app_commands.describe(student_id="Your student ID")
 async def hours2(interaction2: discord.Interaction, student_id: int):
     url = f"https://api-db-hours.westwoodrobots.org/aggregate/member/outreach/{student_id}"
+    session_url = f"https://api-db-hours.westwoodrobots.org/outreach/sessions/{student_id}"
     try:
         response = requests.get(url, timeout=5)
         try:
             data = response.json()
+            sessions_response = requests.get(session_url, timeout=5)
         except Exception:
             await interaction2.response.send_message("Error: Could not parse API response. Please try again later.", ephemeral=True)
             return 
-        
+        sessions_data = sessions_response.json()
         if response.status_code == 200 and "minutes" in data:
             hours_val = data["minutes"] // 60 
             minutes_val = data["minutes"] % 60
