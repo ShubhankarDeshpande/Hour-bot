@@ -323,12 +323,9 @@ class OutreachSessionDropdown(discord.ui.Select):
             #print(totalminutes)
             await interaction3.response.send_message(embed=Sessionembed, ephemeral=True)
 class OutreachSessionView(discord.ui.View):
-    def __init__(self, student_id):
+    def __init__(self, student_id, sessions_data):
         super().__init__()
-        self.add_item(OutreachSessionDropdown(student_id))
-
-
-
+        self.add_item(OutreachSessionDropdown(student_id, sessions_data))
 
 
 
